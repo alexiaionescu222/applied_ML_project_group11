@@ -1,0 +1,6 @@
+Pipfile.lock
+.idea
+__pycache__/
+.DS_Store
+.venv
+personal_testing
