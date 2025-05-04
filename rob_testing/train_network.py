@@ -3,7 +3,7 @@ import keras
 import numpy as np
 import matplotlib.pyplot as plt
 
-train_data = pd.read_csv("data/train_data.csv")
+train_data = pd.read_csv("../data/train_data.csv")
 test_data = pd.read_csv("data/test_data.csv")
 print
 x_train = train_data[['normalized_lap','average_normalized_lap','lap_progress','current_position_norm']]
