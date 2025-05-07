@@ -1,38 +1,41 @@
-import os
-import random
-import shutil
+# split.py
+import os, shutil
 from sklearn.model_selection import train_test_split
 
-DATASET_DIR = 'music_genre_classification/data/genres_original'
-OUTPUT_DIR = 'audio_split'
+# ← your GTZAN root
+DATASET_DIR = "music_genre_classification/data/genres_original"
+OUTPUT_DIR  = "audio_split"
+SPLITS      = {"train": 0.70, "val": 0.15, "test": 0.15}
 
-splits = ['train', 'test', 'val']
-genres = os.listdir(DATASET_DIR)
-
-for split in splits:
-    for genre in genres:
+# 1) Make the split folders
+for split in SPLITS:
+    for genre in os.listdir(DATASET_DIR):
         os.makedirs(os.path.join(OUTPUT_DIR, split, genre), exist_ok=True)
 
-data = []
-for genre in genres:
-    genre_path = os.path.join(DATASET_DIR, genre)
-    for filename in os.listdir(genre_path):
-        if filename.endswith('.wav'):
-            data.append((os.path.join(genre_path, filename), genre))
-            
-random.shuffle(data)
+# 2) Do the 70/15/15 split per genre
+for genre in os.listdir(DATASET_DIR):
+    genre_src = os.path.join(DATASET_DIR, genre)
+    wavs = [f for f in os.listdir(genre_src) if f.endswith(".wav")]
 
-files_by_genre = {genre: [] for genre in genres}
-for filepath, genre in data:
-    files_by_genre[genre].append(filepath)
-    
-for genre, files in files_by_genre.items():
-    train_files, temp_files = train_test_split(files, test_size=0.3, random_state=42)
-    val_files, test_files = train_test_split(temp_files, test_size=0.5, random_state=42)
-    
-    for f in train_files:
-        shutil.copy(f, os.path.join(OUTPUT_DIR, 'train', genre))
-    for f in val_files:
-        shutil.copy(f, os.path.join(OUTPUT_DIR, 'val', genre))
-    for f in test_files:
-        shutil.copy(f, os.path.join(OUTPUT_DIR, 'test', genre))
+    if not wavs:
+        print(f"⚠️  Skipping {genre!r}: no .wav files found")
+        continue
+
+    # hold out test
+    train_val, test = train_test_split(
+        wavs, test_size=SPLITS["test"], random_state=42
+    )
+    # split train vs val
+    val_frac = SPLITS["val"] / (SPLITS["train"] + SPLITS["val"])
+    train, val = train_test_split(
+        train_val, test_size=val_frac, random_state=42
+    )
+
+    # copy files into audio_split/{train,val,test}/{genre}/
+    for split_label, subset in zip(["train","val","test"], [train, val, test]):
+        for fname in subset:
+            src = os.path.join(genre_src, fname)
+            dst = os.path.join(OUTPUT_DIR, split_label, genre, fname)
+            shutil.copyfile(src, dst)
+
+print("✅ Split complete!")

@@ -1,28 +1,25 @@
-import os
-import random
+# test_preprocessing.py
+import os, random, sys
 from preprocessing import preprocess_audio_dataset
 
-# Adjust this path if needed
-SPLIT_DIR = 'audio_split/train'
-GENRES = os.listdir(SPLIT_DIR)
-SAMPLES_PER_GENRE = 1  # Adjust based on how many samples you want to test
+SPLIT_DIR = "audio_split/train"
 
-audio_files = []
-labels = []
+if not os.path.isdir(SPLIT_DIR):
+    print(f"❌ Error: missing {SPLIT_DIR!r}. Run split.py first.")
+    sys.exit(1)
 
-for genre in GENRES:
-    genre_dir = os.path.join(SPLIT_DIR, genre)
-    files = [f for f in os.listdir(genre_dir) if f.endswith('.wav')]
-    selected = random.sample(files, min(SAMPLES_PER_GENRE, len(files)))
-    
-    for f in selected:
-        audio_files.append(os.path.join(genre_dir, f))
-        labels.append(genre)
+audio_files, labels = [], []
+for genre in os.listdir(SPLIT_DIR):
+    genre_folder = os.path.join(SPLIT_DIR, genre)
+    wavs = [f for f in os.listdir(genre_folder) if f.endswith(".wav")]
+    if not wavs:
+        continue
+    pick = random.choice(wavs)
+    audio_files.append(os.path.join(genre_folder, pick))
+    labels.append(genre)
 
-# Run preprocessing
 X, y, scaler, pca = preprocess_audio_dataset(audio_files, labels)
 
-# Output some info about the result
-print(f"Number of total audio clips processed: {len(y)}")
-print(f"Shape of processed feature matrix: {X.shape}")
-print(f"Labels (first 10): {y[:10]}")
+print("✅ Processed clips:", X.shape[0])
+print("✅ Feature dim   :", X.shape[1])
+print("✅ Sample labels :", y)

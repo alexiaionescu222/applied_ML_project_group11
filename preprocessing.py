@@ -1,55 +1,102 @@
+# preprocessing.py
+
+import os
 import numpy as np
+import joblib
 import librosa
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import PCA
 
+def split_audio_into_clips(y, sr, clip_duration=10):
+    clip_samples = sr * clip_duration
+    clips = []
+    for start in range(0, len(y), clip_samples):
+        clip = y[start:start + clip_samples]
+        if len(clip) == clip_samples:
+            clips.append(clip)
+    return clips
 
-def split_audio_into_clips(file_path, clip_duration=10):
-    """Split audio file into 10-second clips."""
-    y, sr = librosa.load(file_path, sr=None)
-    clip_samples = clip_duration * sr
-    return [y[i:i+clip_samples] for i in range(0, len(y), clip_samples) if len(y[i:i+clip_samples]) == clip_samples]
+def extract_mel_spectrogram(y, sr=22050, n_mels=128):
+    S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels)
+    return librosa.power_to_db(S, ref=np.max)
 
-def extract_mel_spectrogram(audio_clip, sr=22050, n_mels=128):
-    """Convert audio clip to Mel spectrogram."""
-    S = librosa.feature.melspectrogram(y=audio_clip, sr=sr, n_mels=n_mels)
-    S_dB = librosa.power_to_db(S, ref=np.max)
-    return S_dB.flatten()
+def scale_unit(mel_db):
+    mn, mx = mel_db.min(), mel_db.max()
+    return (mel_db - mn) / (mx - mn + 1e-6)
 
-def preprocess_audio_dataset(audio_files, labels, sr=22050, n_mels=128, pca_components=100):
-    X_features = []
-    y_expanded = []
-
-    for file_path, label in zip(audio_files, labels):
+def preprocess_audio_dataset(audio_paths, labels,
+                             clip_duration=10, sr=22050,
+                             n_mels=128, pca_components=50):
+    X_feats, y_expanded = [], []
+    for path, label in zip(audio_paths, labels):
         try:
-            clips = split_audio_into_clips(file_path)
-            if not clips:
-                print(f"Skipped (too short or empty): {file_path}")
-                continue
-
-            for clip in clips:
-                mel_spec = extract_mel_spectrogram(clip, sr=sr, n_mels=n_mels)
-                if mel_spec.size == 0:
-                    print(f"Empty Mel spectrogram: {file_path}")
-                    continue
-                X_features.append(mel_spec)
-                y_expanded.append(label)
-
+            y, _ = librosa.load(path, sr=sr)
         except Exception as e:
-            print(f"Failed to process {file_path}: {e}")
+            print(f"⚠️ Skipping unreadable file {path!r}: {e}")
             continue
 
-    if not X_features:
-        raise ValueError("No valid audio features were extracted. Check your input files.")
+        clips = split_audio_into_clips(y, sr, clip_duration)
+        for clip in clips:
+            mel = extract_mel_spectrogram(clip, sr, n_mels)
+            mel = scale_unit(mel)
+            X_feats.append(mel.flatten())
+            y_expanded.append(label)
 
-    # Normalize between 0 and 1
+    if not X_feats:
+        raise RuntimeError("No audio clips could be processed!")
+
+    X = np.vstack(X_feats)
+    y = np.array(y_expanded)
+
     scaler = MinMaxScaler()
-    X_scaled = scaler.fit_transform(X_features)
+    X_scaled = scaler.fit_transform(X)
 
-    # Apply PCA
-    max_components = min(len(X_scaled), len(X_scaled[0]))
-    pca = PCA(n_components=min(pca_components, max_components))
+    # clamp n_components so it never exceeds n_samples or n_features
+    n_samples, n_features = X_scaled.shape
+    n_comp = min(pca_components, n_samples, n_features)
+    pca = PCA(n_components=n_comp)
     X_pca = pca.fit_transform(X_scaled)
 
-    return X_pca, y_expanded, scaler, pca
+    return X_pca, y, scaler, pca
 
+if __name__ == "__main__":
+    SPLITS = {
+        "train": "audio_split/train",
+        "val":   "audio_split/val",
+        "test":  "audio_split/test",
+    }
+    OUT_DIR = "data/features"
+    os.makedirs(OUT_DIR, exist_ok=True)
+
+    for split, split_dir in SPLITS.items():
+        if not os.path.isdir(split_dir):
+            print(f"❌ Missing folder {split_dir!r}, run split.py first.")
+            continue
+
+        audio_paths, labels = [], []
+        for genre in os.listdir(split_dir):
+            genre_folder = os.path.join(split_dir, genre)
+            for fname in os.listdir(genre_folder):
+                if fname.endswith(".wav"):
+                    audio_paths.append(os.path.join(genre_folder, fname))
+                    labels.append(genre)
+
+        X_pca, y, scaler, pca = preprocess_audio_dataset(
+            audio_paths, labels,
+            clip_duration=10, sr=22050,
+            n_mels=128, pca_components=50
+        )
+
+        # save features and labels
+        np.savez(
+            os.path.join(OUT_DIR, f"{split}_pca.npz"),
+            X=X_pca,
+            y=y
+        )
+        # dump scaler & PCA models
+        joblib.dump(scaler, os.path.join(OUT_DIR, f"{split}_scaler.joblib"))
+        joblib.dump(pca,    os.path.join(OUT_DIR, f"{split}_pca_model.joblib"))
+
+        print(f"[{split}] X.shape={X_pca.shape}, y.shape={y.shape}")
+
+    print("✅ All splits processed.")
