@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.neighbors     import KNeighborsClassifier
 from sklearn.metrics       import accuracy_score, classification_report, confusion_matrix
 import matplotlib.pyplot    as plt
+import os
 
 # 1) load PCA‐reduced features
 train = np.load("data/features/train_pca.npz")
@@ -30,4 +31,5 @@ ax.set_xticks(range(len(labels))); ax.set_xticklabels(labels, rotation=45, ha="r
 ax.set_yticks(range(len(labels))); ax.set_yticklabels(labels)
 ax.set_xlabel("Predicted"); ax.set_ylabel("True"); ax.set_title("k-NN Confusion Matrix")
 plt.colorbar(im, ax=ax); plt.tight_layout()
-plt.show()
+plt.savefig("plots/knn_val_confusion_matrix.png")
+plt.close()

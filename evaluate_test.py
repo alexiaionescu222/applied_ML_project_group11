@@ -39,7 +39,6 @@ plt.yticks(range(len(knn.classes_)), knn.classes_)
 plt.tight_layout()
 plt.savefig("plots/knn_test_confusion_matrix.png")
 plt.close()
-print("Saved → knn_test_confusion_matrix.png\n")
 
 # ----- CNN on raw spectrograms -----
 print("=== CNN Test Evaluation ===")
@@ -85,4 +84,3 @@ plt.yticks(range(len(GENRES)), GENRES)
 plt.tight_layout()
 plt.savefig("plots/cnn_test_confusion_matrix.png")
 plt.close()
-print("Saved → cnn_test_confusion_matrix.png")
