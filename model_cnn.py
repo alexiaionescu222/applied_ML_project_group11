@@ -12,7 +12,7 @@ class GenreCNN(nn.Module):
         hop_length: int   = 512,
     ):
         super().__init__()
-        # 1) feature extractor: 2× (Conv → ReLU → MaxPool) + Dropout
+        #feature extractor: 2× (Conv → ReLU → MaxPool) + Dropout
         self.features = nn.Sequential(
             nn.Conv2d(1, 16, kernel_size=3, padding=1),
             nn.ReLU(),
@@ -25,15 +25,15 @@ class GenreCNN(nn.Module):
             nn.Dropout(0.3),
         )
 
-        # 2) figure out flatten size by passing a dummy input
-        #    dummy shape = (batch=1, channel=1, freq_bins=n_mels, time_frames)
+        #figure out flatten size by passing a dummy input
+        #dummy shape = (batch=1, channel=1, freq_bins=n_mels, time_frames)
         n_frames = int((clip_duration * sr) / hop_length)
         with torch.no_grad():
             dummy = torch.zeros(1, 1, n_mels, n_frames)
             feat  = self.features(dummy)
             flatten_dim = feat.numel() // feat.shape[0]  # total features per sample
 
-        # 3) classifier head
+        #classifier head
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(flatten_dim, 128),

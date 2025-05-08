@@ -1,24 +1,25 @@
 # split.py
-import os, shutil
+import os
+import shutil
 from sklearn.model_selection import train_test_split
 
-# ← your GTZAN root
+# GTZAN root
 DATASET_DIR = "music_genre_classification/data/genres_original"
 OUTPUT_DIR  = "audio_split"
 SPLITS      = {"train": 0.70, "val": 0.15, "test": 0.15}
 
-# 1) Make the split folders
+# split folders
 for split in SPLITS:
     for genre in os.listdir(DATASET_DIR):
         os.makedirs(os.path.join(OUTPUT_DIR, split, genre), exist_ok=True)
 
-# 2) Do the 70/15/15 split per genre
+# the 70/15/15 split per genre
 for genre in os.listdir(DATASET_DIR):
     genre_src = os.path.join(DATASET_DIR, genre)
     wavs = [f for f in os.listdir(genre_src) if f.endswith(".wav")]
 
     if not wavs:
-        print(f"⚠️  Skipping {genre!r}: no .wav files found")
+        print(f"Skipping {genre!r}: no .wav files found")
         continue
 
     # hold out test
@@ -38,4 +39,4 @@ for genre in os.listdir(DATASET_DIR):
             dst = os.path.join(OUTPUT_DIR, split_label, genre, fname)
             shutil.copyfile(src, dst)
 
-print("✅ Split complete!")
+print("Split complete!")

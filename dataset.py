@@ -17,7 +17,7 @@ class GTZANSpectrogramDataset(Dataset):
                 try:
                     y, _ = librosa.load(path, sr=sr)
                 except Exception as e:
-                    print(f"⚠️  Skipping unreadable file {path!r}: {e}")
+                    print(f"Skipping unreadable file {path!r}: {e}")
                     continue
 
                 # split into fixed‐length clips

@@ -19,4 +19,4 @@ if __name__ == "__main__":
     for step in steps:
         run(step)
 
-    print("\n🎉 All steps finished successfully!")
+    print("\n All steps finished successfully!")

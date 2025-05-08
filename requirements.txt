@@ -8,6 +8,7 @@ contourpy
 cycler
 decorator==5.2.1
 filelock
+flask
 fonttools
 fsspec==2025.3.2
 gmpy2

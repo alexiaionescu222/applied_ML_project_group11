@@ -1,14 +1,11 @@
 # API.py
 from flask import Flask, request, jsonify
-import joblib
 import librosa
-import numpy as np
 import torch
 from model_cnn import GenreCNN
-import os
 from collections import Counter
 
-# --- CONFIG ---
+# configuration
 PORT       = 8000
 SR         = 22050
 N_MELS     = 128
@@ -19,7 +16,7 @@ GENRES     = [
 ]
 CNN_PATH    = "cnn_best.pth"
 
-# --- LOAD MODEL ---
+# load model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 cnn    = GenreCNN(n_mels=N_MELS, n_genres=len(GENRES)).to(device)
 cnn.load_state_dict(torch.load(CNN_PATH, map_location=device))

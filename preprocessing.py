@@ -31,7 +31,7 @@ def preprocess_audio_dataset(audio_paths, labels,
         try:
             y, _ = librosa.load(path, sr=sr)
         except Exception as e:
-            print(f"⚠️ Skipping unreadable file {path!r}: {e}")
+            print(f"Skipping unreadable file {path!r}: {e}")
             continue
 
         clips = split_audio_into_clips(y, sr, clip_duration)
@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     for split, split_dir in SPLITS.items():
         if not os.path.isdir(split_dir):
-            print(f"❌ Missing folder {split_dir!r}, run split.py first.")
+            print(f"Missing folder {split_dir!r}, run split.py first.")
             continue
 
         audio_paths, labels = [], []
@@ -98,4 +98,4 @@ if __name__ == "__main__":
 
         print(f"[{split}] X.shape={X_pca.shape}, y.shape={y.shape}")
 
-    print("✅ All splits processed.")
+    print("All splits processed.")

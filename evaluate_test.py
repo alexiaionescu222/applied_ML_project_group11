@@ -16,7 +16,7 @@ GENRES = ["blues","classical","country","disco","hiphop","jazz","metal","pop","r
 BATCH_SIZE = 16
 N_MELS     = 128
 
-# ----- k-NN on PCA features -----
+#k-NN on PCA features
 print("=== k-NN Test Evaluation ===")
 train = np.load("data/features/train_pca.npz")
 test  = np.load("data/features/test_pca.npz")
@@ -35,14 +35,15 @@ cm = confusion_matrix(y_test, y_pred, labels=knn.classes_)
 plt.figure(figsize=(8,6))
 plt.imshow(cm, cmap="Blues")
 plt.title("k-NN Test Confusion Matrix")
-plt.xlabel("Predicted"); plt.ylabel("True")
+plt.xlabel("Predicted")
+plt.ylabel("True")
 plt.xticks(range(len(knn.classes_)), knn.classes_, rotation=45, ha="right")
 plt.yticks(range(len(knn.classes_)), knn.classes_)
 plt.tight_layout()
 plt.savefig("plots/knn_test_confusion_matrix.png")
 plt.close()
 
-# ----- CNN on raw spectrograms -----
+#CNN on raw spectrograms
 print("=== CNN Test Evaluation ===")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model  = GenreCNN(n_mels=N_MELS, n_genres=len(GENRES)).to(device)
@@ -80,7 +81,8 @@ cm = confusion_matrix(y_true, y_pred)
 plt.figure(figsize=(8,6))
 plt.imshow(cm, cmap="Blues")
 plt.title("CNN Test Confusion Matrix")
-plt.xlabel("Predicted"); plt.ylabel("True")
+plt.xlabel("Predicted")
+plt.ylabel("True")
 plt.xticks(range(len(GENRES)), GENRES, rotation=45, ha="right")
 plt.yticks(range(len(GENRES)), GENRES)
 plt.tight_layout()
