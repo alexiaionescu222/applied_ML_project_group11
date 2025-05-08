@@ -4,6 +4,7 @@ from sklearn.neighbors     import KNeighborsClassifier
 from sklearn.metrics       import accuracy_score, classification_report, confusion_matrix
 import matplotlib.pyplot    as plt
 import os
+os.makedirs("plots", exist_ok=True)
 
 # 1) load PCA‐reduced features
 train = np.load("data/features/train_pca.npz")

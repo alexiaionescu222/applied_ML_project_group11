@@ -9,6 +9,9 @@ import torch.nn as nn
 from torch.utils.data       import DataLoader
 from model_cnn              import GenreCNN
 from dataset                import GTZANSpectrogramDataset
+import os
+os.makedirs("plots", exist_ok=True)
+
 
 GENRES = ["blues","classical","country","disco","hiphop","jazz","metal","pop","reggae","rock"]
 BATCH_SIZE = 16

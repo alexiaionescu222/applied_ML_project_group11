@@ -7,6 +7,8 @@ from torch.utils.data import DataLoader
 from dataset import GTZANSpectrogramDataset
 from model_cnn import GenreCNN
 import matplotlib.pyplot as plt
+import os
+os.makedirs("plots", exist_ok=True)
 
 # --- HYPERPARAMETERS ---
 GENRES       = ["blues","classical","country","disco","hiphop",
