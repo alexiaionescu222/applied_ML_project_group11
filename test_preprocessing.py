@@ -2,7 +2,7 @@ import os
 import sys
 import random
 import numpy as np
-from preprocessing import preprocess_audio_dataset, evaluate_pca_performance
+from preprocessing import preprocess_audio_dataset
 
 # Fix randomness for reproducibility
 random.seed(42)
