@@ -1,123 +1,120 @@
-# train_cnn.py
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from itertools import product
 from dataset import GTZANSpectrogramDataset
 from model_cnn import GenreCNN
 import matplotlib.pyplot as plt
 import os
+
 os.makedirs("plots", exist_ok=True)
 
-# hyperparameters
-GENRES       = ["blues","classical","country","disco","hiphop",
-                "jazz","metal","pop","reggae","rock"]
-BATCH_SIZE   = 16
-LR           = 1e-3
-NUM_EPOCHS   = 20
-PATIENCE     = 3
-N_MELS       = 128
+# fixed settings
+GENRES        = ["blues","classical","country","disco","hiphop",
+                 "jazz","metal","pop","reggae","rock"]
+NUM_EPOCHS    = 30
+PATIENCE      = 5
+N_MELS        = 128
+CLIP_DURATION = 10
+SR            = 22050
+HOP_LENGTH    = 512
+DEVICE        = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# data loaders
-train_ds = GTZANSpectrogramDataset("audio_split/train", GENRES, n_mels=N_MELS)
-val_ds   = GTZANSpectrogramDataset("audio_split/val",   GENRES, n_mels=N_MELS)
-train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
-val_loader   = DataLoader(val_ds,   batch_size=BATCH_SIZE)
+# hyper‐parameter grid
+GRID = {
+    "lr":         [1e-3, 5e-4, 1e-4],
+    "batch_size":[16, 32]
+}
 
-# model, loos and optimizer
-device    = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model     = GenreCNN(n_mels=N_MELS, n_genres=len(GENRES)).to(device)
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=LR)
-
-# metrics
-train_losses, train_accs = [], []
-val_losses,   val_accs   = [], []
-
+# to record results
 best_val_acc = 0.0
-epochs_no_improve = 0
+best_config  = None
+results      = []
 
-for epoch in range(1, NUM_EPOCHS + 1):
-    # train
-    model.train()
-    running_loss = 0.0
-    correct = total = 0
-    for X_batch, y_batch in train_loader:
-        X_batch, y_batch = X_batch.to(device), y_batch.to(device)
-        optimizer.zero_grad()
-        outputs = model(X_batch)
-        loss = criterion(outputs, y_batch)
-        loss.backward()
-        optimizer.step()
+# grid search
+for lr, batch_size in product(GRID["lr"], GRID["batch_size"]):
+    print(f"\n Running config: lr={lr}, batch_size={batch_size}")
+    # data loaders (recreated per batch_size)
+    train_ds = GTZANSpectrogramDataset("audio_split/train", GENRES, n_mels=N_MELS)
+    val_ds   = GTZANSpectrogramDataset("audio_split/val",   GENRES, n_mels=N_MELS)
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
+    val_loader   = DataLoader(val_ds,   batch_size=batch_size)
 
-        running_loss += loss.item() * X_batch.size(0)
-        preds = outputs.argmax(dim=1)
-        correct += (preds == y_batch).sum().item()
-        total += y_batch.size(0)
+    # model, loss, optimizer
+    model     = GenreCNN(
+                    n_mels=N_MELS,
+                    n_genres=len(GENRES),
+                    clip_duration=CLIP_DURATION,
+                    sr=SR,
+                    hop_length=HOP_LENGTH
+                ).to(DEVICE)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=lr)
 
-    train_loss = running_loss / total
-    train_acc  = correct / total
-    train_losses.append(train_loss)
-    train_accs.append(train_acc)
+    # early‐stopping trackers
+    epochs_no_improve = 0
+    config_best_val   = 0.0
 
-    # validate
-    model.eval()
-    val_loss = val_correct = val_total = 0.0
-    with torch.no_grad():
-        for X_batch, y_batch in val_loader:
-            X_batch, y_batch = X_batch.to(device), y_batch.to(device)
-            outputs = model(X_batch)
-            loss = criterion(outputs, y_batch)
+    # training loop
+    for epoch in range(1, NUM_EPOCHS + 1):
+        # --- train ---
+        model.train()
+        running_loss = correct = total = 0
+        for X, y in train_loader:
+            X, y = X.to(DEVICE), y.to(DEVICE)
+            optimizer.zero_grad()
+            preds = model(X)
+            loss  = criterion(preds, y)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item() * X.size(0)
+            correct      += (preds.argmax(1) == y).sum().item()
+            total        += y.size(0)
 
-            val_loss    += loss.item() * X_batch.size(0)
-            preds       = outputs.argmax(dim=1)
-            val_correct += (preds == y_batch).sum().item()
-            val_total   += y_batch.size(0)
+        train_loss = running_loss / total
+        train_acc  = correct / total
 
-    val_loss = val_loss / val_total
-    val_acc  = val_correct / val_total
-    val_losses.append(val_loss)
-    val_accs.append(val_acc)
+        # --- validate ---
+        model.eval()
+        val_loss = val_correct = val_total = 0
+        with torch.no_grad():
+            for X, y in val_loader:
+                X, y = X.to(DEVICE), y.to(DEVICE)
+                preds = model(X)
+                val_loss    += criterion(preds, y).item() * X.size(0)
+                val_correct += (preds.argmax(1) == y).sum().item()
+                val_total   += y.size(0)
 
-    # logging
-    print(
-        f"Epoch {epoch}/{NUM_EPOCHS} | "
-        f"Train Loss: {train_loss:.3f}, Train Acc: {train_acc:.3f} | "
-        f"Val Loss: {val_loss:.3f}, Val Acc: {val_acc:.3f}"
-    )
+        val_loss = val_loss / val_total
+        val_acc  = val_correct / val_total
 
-    # early stopping
-    if val_acc > best_val_acc:
-        best_val_acc = val_acc
-        epochs_no_improve = 0
-        torch.save(model.state_dict(), "cnn_best.pth")
-    else:
-        epochs_no_improve += 1
-        if epochs_no_improve >= PATIENCE:
-            print(f"→ Early stopping after {epoch} epochs.")
-            break
+        print(
+            f"  Epoch {epoch}/{NUM_EPOCHS} "
+            f"– train_loss: {train_loss:.3f}, train_acc: {train_acc:.3f} "
+            f"| val_loss: {val_loss:.3f}, val_acc: {val_acc:.3f}"
+        )
 
-# plot & save curves
-epochs = range(1, len(train_losses) + 1)
+        # early stopping per config
+        if val_acc > config_best_val:
+            config_best_val   = val_acc
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+            if epochs_no_improve >= PATIENCE:
+                print(f"  → Early stopping at epoch {epoch}")
+                break
 
-# Loss curve
-plt.figure()
-plt.plot(epochs, train_losses, label="Train Loss")
-plt.plot(epochs, val_losses,   label="Val Loss")
-plt.xlabel("Epoch")
-plt.ylabel("Loss")
-plt.title("CNN Loss Curve")
-plt.legend()
-plt.tight_layout()
-plt.savefig("plots/cnn_loss_curve.png")
+    # record and compare against global best
+    results.append({
+        "lr": lr, "batch_size": batch_size, "best_val_acc": config_best_val
+    })
+    if config_best_val > best_val_acc:
+        best_val_acc = config_best_val
+        best_config  = {"lr": lr, "batch_size": batch_size}
 
-# Accuracy curve
-plt.figure()
-plt.plot(epochs, train_accs, label="Train Acc")
-plt.plot(epochs, val_accs,   label="Val Acc")
-plt.xlabel("Epoch")
-plt.ylabel("Accuracy")
-plt.title("CNN Accuracy Curve")
-plt.legend()
-plt.tight_layout()
-plt.savefig("plots/cnn_acc_curve.png")
+# summary
+print("\n=== GRID SEARCH RESULTS ===")
+for r in results:
+    print(f" lr={r['lr']:<7} bs={r['batch_size']:<3}  val_acc={r['best_val_acc']:.3f}")
+print(f"\n Best config: lr={best_config['lr']}, batch_size={best_config['batch_size']} → val_acc={best_val_acc:.3f}")

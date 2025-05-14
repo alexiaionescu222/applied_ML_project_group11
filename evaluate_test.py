@@ -1,4 +1,3 @@
-# evaluate_test.py
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.neighbors     import KNeighborsClassifier
@@ -9,14 +8,18 @@ from torch.utils.data       import DataLoader
 from model_cnn              import GenreCNN
 from dataset                import GTZANSpectrogramDataset
 import os
+
 os.makedirs("plots", exist_ok=True)
 
+# ─── your best configuration (replace with your actual results) ─────────
+BEST_BATCH_SIZE = 32        # ← set this to the batch_size that gave highest val‐acc
+BEST_MODEL_FILE = "cnn_best.pth"  # ← if you saved it under a different name
 
-GENRES = ["blues","classical","country","disco","hiphop","jazz","metal","pop","reggae","rock"]
-BATCH_SIZE = 16
+GENRES = ["blues","classical","country","disco","hiphop",
+          "jazz","metal","pop","reggae","rock"]
 N_MELS     = 128
 
-#k-NN on PCA features
+# k-NN on PCA features
 print("=== k-NN Test Evaluation ===")
 train = np.load("data/features/train_pca.npz")
 test  = np.load("data/features/test_pca.npz")
@@ -43,15 +46,18 @@ plt.tight_layout()
 plt.savefig("plots/knn_test_confusion_matrix.png")
 plt.close()
 
-#CNN on raw spectrograms
+# CNN on raw spectrograms
 print("=== CNN Test Evaluation ===")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# instantiate model exactly as in training
 model  = GenreCNN(n_mels=N_MELS, n_genres=len(GENRES)).to(device)
-model.load_state_dict(torch.load("cnn_best.pth", map_location=device))
+model.load_state_dict(torch.load(BEST_MODEL_FILE, map_location=device))
 criterion = nn.CrossEntropyLoss()
 
+# use your best batch size here
 test_ds     = GTZANSpectrogramDataset("audio_split/test", GENRES, n_mels=N_MELS)
-test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE)
+test_loader = DataLoader(test_ds, batch_size=BEST_BATCH_SIZE)
 
 model.eval()
 all_preds, all_labels = [], []

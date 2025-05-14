@@ -1,6 +1,6 @@
-# model_cnn.py
 import torch
 import torch.nn as nn
+
 
 class GenreCNN(nn.Module):
     def __init__(
