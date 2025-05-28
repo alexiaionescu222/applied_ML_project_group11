@@ -1,14 +1,14 @@
 # uvicorn API:app --reload
 # http://127.0.0.1:8000/docs
-
 import io
 import librosa
 import torch
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Response
 from pydantic import BaseModel
 from model_cnn import GenreCNN
+from typing import Optional, Tuple
 
-# config
+# Configuration
 PORT = 8000
 SR = 22050
 CLIP_DUR = 10
@@ -20,94 +20,101 @@ GENRES = [
 ]
 CNN_PATH = "cnn_best.pth"
 
-# model
+# Model setup
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-cnn = GenreCNN(n_mels=N_MELS, n_genres=len(GENRES),
-               clip_duration=CLIP_DUR, sr=SR, hop_length=HOP_LEN)
+cnn = GenreCNN(
+    n_mels=N_MELS, n_genres=len(GENRES), clip_duration=CLIP_DUR,
+    sr=SR, hop_length=HOP_LEN
+)
 cnn.load_state_dict(torch.load(CNN_PATH, map_location=device))
 cnn.eval().to(device)
 
+# FastAPI app
 app = FastAPI(
     title="Music Genre Classifier API",
-    version="1.0",
-    description="Upload a short WAV clip and get back a predicted genre."
+    version="1.1",
+    description = (
+        "Upload a short WAV audio clip only. "
+        "The app will analyze the audio, extract mel spectrogram features, and "
+        "classify it into one of 10 music genres: blues, classical, country, "
+        "disco, hiphop, jazz, metal, pop, reggae, or rock."
+    )
 )
 
 
-class Prediction(BaseModel):
+class PredictionResponse(BaseModel):
     genre: str
+    confidence: Optional[float] = None
 
 
-@app.post(
-    "/predict", response_model=Prediction, summary="Classify a music clip"
-)
-async def predict(
-    file: UploadFile = File(..., description="A WAV file ≤ 10s")
-):
-    # check file type
-    if not file.filename.lower().endswith(".wav"):
-        raise HTTPException(
-            status_code=400, detail="Only WAV files are supported."
-        )
-
-    # read file contents
+def read_audio_file(file_data: bytes) -> torch.Tensor:
     try:
-        data = await file.read()
-        if not data:
-            raise HTTPException(
-                status_code=400, detail="Uploaded file is empty."
-            )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to read uploaded file: {e}"
-        )
-
-    # load audio
-    try:
-        y, _ = librosa.load(io.BytesIO(data), sr=SR, duration=CLIP_DUR)
+        y, _ = librosa.load(io.BytesIO(file_data), sr=SR, duration=CLIP_DUR)
         if y is None or len(y) < 1:
-            raise HTTPException(
-                status_code=400, detail="Audio data is empty or corrupted."
-            )
-    except Exception as e:
-        raise HTTPException(
-            status_code=400, detail=f"Could not decode audio: {e}"
-        )
-
-    # generate mel spectrogram
-    try:
+            raise ValueError("Audio data is empty or corrupted.")
         mel = librosa.feature.melspectrogram(
             y=y, sr=SR, n_mels=N_MELS, hop_length=HOP_LEN
-            )
+        )
         mel_db = librosa.power_to_db(mel, ref=mel.max())
         mel_norm = (
-                mel_db - mel_db.min()
-                ) / (mel_db.max() - mel_db.min() + 1e-6)
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to generate mel spectrogram: {e}"
-        )
-
-    # format input for model
-    try:
-        inp = (
+            mel_db - mel_db.min()
+        ) / (mel_db.max() - mel_db.min() + 1e-6)
+        return (
             torch.tensor(mel_norm, dtype=torch.float32)
             .unsqueeze(0)
             .unsqueeze(0)
             .to(device)
         )
-
-        with torch.no_grad():
-            logits = cnn(inp)
-            idx = int(logits.argmax(dim=1).item())
-            genre = GENRES[idx]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
+        raise HTTPException(
+            status_code=400, detail=f"Audio preprocessing failed: {str(e)}"
+        )
 
-    return Prediction(genre=genre)
+
+def get_prediction(input_tensor: torch.Tensor) -> Tuple[str, float]:
+    with torch.no_grad():
+        logits = cnn(input_tensor)
+        probs = torch.nn.functional.softmax(logits, dim=1)
+        confidence, idx = torch.max(probs, dim=1)
+        return GENRES[idx.item()], confidence.item()
+
+
+@app.post(
+    "/predictions",
+    response_model=PredictionResponse,
+    summary="Classify a music clip",
+    response_description="Predicted music genre and optional confidence score"
+)
+async def predict_genre(
+    file: UploadFile = File(
+        ..., description="A WAV file up to 10 seconds in length"
+    ),
+    response: Response = None
+):
+    if not file.filename.lower().endswith(".wav"):
+        raise HTTPException(
+            status_code=400, detail="Only WAV files are supported."
+        )
+
+    try:
+        file_data = await file.read()
+        if not file_data:
+            raise HTTPException(
+                status_code=400, detail="Uploaded file is empty."
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"File read error: {str(e)}"
+        )
+
+    input_tensor = read_audio_file(file_data)
+    genre, confidence = get_prediction(input_tensor)
+
+    response.headers["Cache-Control"] = "no-store"
+
+    return PredictionResponse(genre=genre, confidence=confidence)
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("api:app", host="0.0.0.0", port=PORT, reload=True)
+    uvicorn.run("API:app", host="0.0.0.0", port=PORT, reload=True)
