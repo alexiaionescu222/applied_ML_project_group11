@@ -5,8 +5,8 @@ from sklearn.model_selection import train_test_split
 
 # GTZAN root
 DATASET_DIR = "music_genre_classification/data/genres_original"
-OUTPUT_DIR  = "audio_split"
-SPLITS      = {"train": 0.70, "val": 0.15, "test": 0.15}
+OUTPUT_DIR = "audio_split"
+SPLITS = {"train": 0.70, "val": 0.15, "test": 0.15}
 
 # split folders
 for split in SPLITS:
@@ -33,7 +33,9 @@ for genre in os.listdir(DATASET_DIR):
     )
 
     # copy files into audio_split/{train,val,test}/{genre}/
-    for split_label, subset in zip(["train","val","test"], [train, val, test]):
+    for split_label, subset in zip(
+        ["train", "val", "test"], [train, val, test]
+    ):
         for fname in subset:
             src = os.path.join(genre_src, fname)
             dst = os.path.join(OUTPUT_DIR, split_label, genre, fname)

@@ -10,10 +10,6 @@ print("=== Running preprocessing.py ===")
 os.system("python preprocessing.py")
 print("Preprocessing complete!\n")
 
-print("=== Running test_preprocessing.py ===")
-os.system("python test_preprocessing.py")
-print("Test preprocessing complete!\n")
-
 print("=== Running train_baseline_knn.py ===")
 os.system("python train_baseline_knn.py")
 print("Baseline k-NN training complete!\n")

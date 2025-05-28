@@ -1,4 +1,3 @@
-# run_pipeline.py
 import streamlit as st
 import subprocess
 import sys
@@ -13,6 +12,7 @@ pipeline_steps = [
     "evaluate_test.py"
 ]
 
+
 def run_script(script_name):
     """Runs a Python script using the current Python interpreter."""
     try:
@@ -26,10 +26,13 @@ def run_script(script_name):
     except subprocess.CalledProcessError as e:
         return f"Error running {script_name}:\n{e.stderr or e}"
 
+
 # Streamlit app UI
 st.title("Music Genere Classification")
 
-st.markdown("Select a step to run or click **Run All** to execute the full pipeline.")
+st.markdown(
+    "Select a step to run or click **Run All** to execute the full pipeline."
+)
 
 if st.button("Run All Steps!"):
     for step in pipeline_steps:

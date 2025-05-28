@@ -26,10 +26,7 @@ for genre in sorted(os.listdir(SPLIT_DIR)):
     labels.append(genre)
 
 X, y, scaler, pca = preprocess_audio_dataset(audio_files, labels)
-#components_range, accuracies = evaluate_pca_performance(X, y, max_components=100)
 
 print("Processed clips:", X.shape[0])
-print("Feature dim   :", X.shape[1])
-print("Sample labels :", y)
-#print("Components range:", components_range)
-#print("Accuracies:", accuracies)
+print("Feature dim:", X.shape[1])
+print("Sample labels:", y)

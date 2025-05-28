@@ -7,6 +7,7 @@ charset-normalizer
 contourpy
 cycler
 decorator==5.2.1
+fastapi
 filelock
 flask
 fonttools
@@ -37,6 +38,7 @@ pycparser==2.22
 pyparsing
 PySocks
 python-dateutil
+python-multipart
 pytz
 PyYAML
 requests
@@ -56,3 +58,4 @@ tqdm==4.67.1
 typing-extensions
 tzdata
 unicodedata2
+uvicorn

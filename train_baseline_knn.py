@@ -1,16 +1,17 @@
-# train_baseline_knn.py
 import numpy as np
-from sklearn.neighbors     import KNeighborsClassifier
-from sklearn.metrics       import accuracy_score, classification_report, confusion_matrix
-import matplotlib.pyplot    as plt
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import (
+    accuracy_score, classification_report, confusion_matrix
+)
+import matplotlib.pyplot as plt
 import os
 os.makedirs("plots", exist_ok=True)
 
 # load PCA‐reduced features
 train = np.load("data/features/train_pca.npz")
 X_train, y_train = train["X"], train["y"]
-val   = np.load("data/features/val_pca.npz")
-X_val, y_val     = val["X"],   val["y"]
+val = np.load("data/features/val_pca.npz")
+X_val, y_val = val["X"],   val["y"]
 
 # fit k-NN with k=5
 knn = KNeighborsClassifier(n_neighbors=5)
@@ -18,15 +19,15 @@ knn.fit(X_train, y_train)
 
 # evaluate on validation set
 y_pred = knn.predict(X_val)
-acc    = accuracy_score(y_val, y_pred)
+acc = accuracy_score(y_val, y_pred)
 print(f"k-NN(k=5) Validation acc: {acc:.3f}\n")
 print("Classification report:")
 print(classification_report(y_val, y_pred))
 
 # confusion matrix
 labels = knn.classes_
-cm     = confusion_matrix(y_val, y_pred, labels=labels)
-fig, ax = plt.subplots(1,1,figsize=(7,7))
+cm = confusion_matrix(y_val, y_pred, labels=labels)
+fig, ax = plt.subplots(1, 1, figsize=(7,7))
 im = ax.imshow(cm, cmap="Blues")
 ax.set_xticks(range(len(labels)))
 ax.set_xticklabels(labels, rotation=45, ha="right")

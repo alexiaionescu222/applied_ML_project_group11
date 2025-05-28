@@ -1,30 +1,32 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.neighbors     import KNeighborsClassifier
-from sklearn.metrics       import accuracy_score, confusion_matrix, classification_report
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import (
+    accuracy_score, confusion_matrix, classification_report,
+)
+
 import torch
 import torch.nn as nn
-from torch.utils.data       import DataLoader
-from model_cnn              import GenreCNN
-from dataset                import GTZANSpectrogramDataset
+from torch.utils.data import DataLoader
+from model_cnn import GenreCNN
+from dataset import GTZANSpectrogramDataset
 import os
 
 os.makedirs("plots", exist_ok=True)
 
-# ─── your best configuration (replace with your actual results) ─────────
-BEST_BATCH_SIZE = 32        # ← set this to the batch_size that gave highest val‐acc
-BEST_MODEL_FILE = "cnn_best.pth"  # ← if you saved it under a different name
+BEST_BATCH_SIZE = 32
+BEST_MODEL_FILE = "cnn_best.pth"
 
-GENRES = ["blues","classical","country","disco","hiphop",
-          "jazz","metal","pop","reggae","rock"]
-N_MELS     = 128
+GENRES = ["blues", "classical", "country", "disco", "hiphop",
+          "jazz", "metal", "pop", "reggae", "rock"]
+N_MELS = 128
 
 # k-NN on PCA features
 print("=== k-NN Test Evaluation ===")
 train = np.load("data/features/train_pca.npz")
-test  = np.load("data/features/test_pca.npz")
+test = np.load("data/features/test_pca.npz")
 X_train, y_train = train["X"], train["y"]
-X_test,  y_test  = test["X"],  test["y"]
+X_test,  y_test = test["X"],  test["y"]
 
 knn = KNeighborsClassifier(n_neighbors=5)
 knn.fit(X_train, y_train)
@@ -35,7 +37,7 @@ print("Classification report:")
 print(classification_report(y_test, y_pred, target_names=knn.classes_))
 
 cm = confusion_matrix(y_test, y_pred, labels=knn.classes_)
-plt.figure(figsize=(8,6))
+plt.figure(figsize=(8, 6))
 plt.imshow(cm, cmap="Blues")
 plt.title("k-NN Test Confusion Matrix")
 plt.xlabel("Predicted")
@@ -51,12 +53,12 @@ print("=== CNN Test Evaluation ===")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # instantiate model exactly as in training
-model  = GenreCNN(n_mels=N_MELS, n_genres=len(GENRES)).to(device)
+model = GenreCNN(n_mels=N_MELS, n_genres=len(GENRES)).to(device)
 model.load_state_dict(torch.load(BEST_MODEL_FILE, map_location=device))
 criterion = nn.CrossEntropyLoss()
 
 # use your best batch size here
-test_ds     = GTZANSpectrogramDataset("audio_split/test", GENRES, n_mels=N_MELS)
+test_ds = GTZANSpectrogramDataset("audio_split/test", GENRES, n_mels=N_MELS)
 test_loader = DataLoader(test_ds, batch_size=BEST_BATCH_SIZE)
 
 model.eval()
@@ -67,7 +69,7 @@ with torch.no_grad():
     for X_batch, y_batch in test_loader:
         X_batch, y_batch = X_batch.to(device), y_batch.to(device)
         outputs = model(X_batch)
-        loss    = criterion(outputs, y_batch)
+        loss = criterion(outputs, y_batch)
         test_loss += loss.item() * X_batch.size(0)
 
         preds = outputs.argmax(dim=1)
@@ -84,7 +86,7 @@ print("Classification report:")
 print(classification_report(y_true, y_pred, target_names=GENRES))
 
 cm = confusion_matrix(y_true, y_pred)
-plt.figure(figsize=(8,6))
+plt.figure(figsize=(8, 6))
 plt.imshow(cm, cmap="Blues")
 plt.title("CNN Test Confusion Matrix")
 plt.xlabel("Predicted")

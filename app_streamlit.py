@@ -4,6 +4,12 @@
 
 
 import streamlit as st
+import io
+import torch
+import librosa
+import librosa.display
+import matplotlib.pyplot as plt
+from model_cnn import GenreCNN
 
 st.set_page_config(
     page_title="🎵 Music Genre Classifier",
@@ -11,23 +17,17 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-import io
-import numpy as np
-import torch
-import librosa
-import librosa.display
-import matplotlib.pyplot as plt
-from model_cnn import GenreCNN
 
-SR         = 22050
-CLIP_DUR   = 10       # seconds
-N_MELS     = 128
-HOP_LEN    = 512
-GENRES     = [
-    "blues","classical","country","disco","hiphop",
-    "jazz","metal","pop","reggae","rock"
+SR = 22050
+CLIP_DUR = 10
+N_MELS = 128
+HOP_LEN = 512
+GENRES = [
+    "blues", "classical", "country", "disco", "hiphop",
+    "jazz", "metal", "pop", "reggae", "rock"
 ]
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 @st.cache_resource
 def load_cnn_model():
@@ -42,13 +42,14 @@ def load_cnn_model():
     model.eval()
     return model
 
+
 cnn = load_cnn_model()
 
 st.title("🎵 Music Genre Classifier")
 st.write(
     """
-    Upload a WAV clip,  
-    visualize its waveform & Mel-spectrogram,  
+    Upload a WAV clip,
+    visualize its waveform & Mel-spectrogram,
     and see which of the 10 GTZAN genres the CNN predicts.
     """
 )
@@ -61,10 +62,12 @@ if not uploaded:
 raw_bytes = uploaded.read()
 
 st.subheader("🔊 Audio Playback")
-st.audio(raw_bytes, format="audio/wav")  
+st.audio(raw_bytes, format="audio/wav")
 
 try:
-    y, sr = librosa.load(io.BytesIO(raw_bytes), sr=SR, duration=CLIP_DUR)
+    y, sr = librosa.load(
+        io.BytesIO(raw_bytes), sr=SR, duration=CLIP_DUR
+    )
 except Exception as e:
     st.error(f"❌ Could not decode audio: {e}")
     st.stop()
@@ -72,8 +75,10 @@ except Exception as e:
 mel = librosa.feature.melspectrogram(
     y=y, sr=sr, n_mels=N_MELS, hop_length=HOP_LEN
 )
-mel_db   = librosa.power_to_db(mel, ref=mel.max())
-mel_norm = (mel_db - mel_db.min()) / (mel_db.max() - mel_db.min() + 1e-6)
+mel_db = librosa.power_to_db(mel, ref=mel.max())
+mel_norm = (
+    mel_db - mel_db.min()
+    ) / (mel_db.max() - mel_db.min() + 1e-6)
 
 col1, col2 = st.columns(2)
 
@@ -109,9 +114,9 @@ inp = (
 )
 with torch.no_grad():
     logits = cnn(inp)
-    pred_idx   = int(logits.argmax(dim=1).item())
+    pred_idx = int(logits.argmax(dim=1).item())
     pred_genre = GENRES[pred_idx]
-    
+
 st.markdown("---")
 st.subheader("🎯 Predicted Genre")
 st.success(f"**{pred_genre.upper()}**", icon="✅")
