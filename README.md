@@ -5,9 +5,10 @@ This project implements a **music genre classification system** using audio feat
 > **blues**, **classical**, **country**, **disco**, **hiphop**, **jazz**, **metal**, **pop**, **reggae**, **rock**
 
 The system includes:
-- A preprocessing pipeline (MFCC extraction, normalization, PCA)
-- A machine learning model (e.g., SVM, Random Forest, or custom model)
+- A preprocessing pipeline
+- A kNN baseline model and a CNN model
 - A RESTful API to interact with the model
+- A streamlit interface
 - Unit tests to ensure reliability and correctness
 
 ---
@@ -27,7 +28,7 @@ pip install -r requirements.txt
 By default, the API will be hosted at:http://127.0.0.1:8000. In case of loading difficulties, try http://127.0.0.1:8000/docs.
 
 ```bash
-uvicorn api:app --reload 
+uvicorn API:app --reload 
 ```
 
 --- 
@@ -37,7 +38,7 @@ uvicorn api:app --reload
 To check out the Streamlit page, use the next command:
 
 ```bash
-streamlit run streamlit_app.py
+streamlit run app_streamlit.py
 ```
 
 --- 

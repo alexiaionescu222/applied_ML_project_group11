@@ -1,51 +1,23 @@
-import streamlit as st
-import subprocess
-import sys
+import os
 
-# List of pipeline steps
-pipeline_steps = [
-    "split.py",
-    "preprocessing.py",
-    "test_preprocessing.py",
-    "train_baseline_knn.py",
-    "train_cnn.py",
-    "evaluate_test.py"
-]
+print("\n=== Running split.py ===")
+os.system("python split.py")
+print("Audio split complete!\n")
 
+print("=== Running preprocessing.py ===")
+os.system("python preprocessing.py")
+print("Preprocessing complete!\n")
 
-def run_script(script_name):
-    """Runs a Python script using the current Python interpreter."""
-    try:
-        result = subprocess.run(
-            [sys.executable, script_name],
-            check=True,
-            capture_output=True,
-            text=True
-        )
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        return f"Error running {script_name}:\n{e.stderr or e}"
+print("=== Running train_baseline_knn.py ===")
+os.system("python train_baseline_knn.py")
+print("Baseline k-NN training complete!\n")
 
+print("=== Running train_cnn.py ===")
+os.system("python train_cnn.py")
+print("CNN training complete!\n")
 
-# Streamlit app UI
-st.title("Music Genere Classification")
+print("=== Running evaluate_test.py ===")
+os.system("python evaluate_test.py")
+print("Test set evaluation complete!\n")
 
-st.markdown(
-    "Select a step to run or click **Run All** to execute the full pipeline."
-)
-
-if st.button("Run All Steps!"):
-    for step in pipeline_steps:
-        st.subheader(f"Running: `{step}`")
-        output = run_script(step)
-        st.code(output)
-    st.success("All steps completed successfully!")
-
-st.markdown("---")
-
-selected_step = st.selectbox("Run individual step:", pipeline_steps)
-
-if st.button("Run Selected Step"):
-    st.subheader(f"Running: `{selected_step}`")
-    output = run_script(selected_step)
-    st.code(output)
+print("All steps completed.")

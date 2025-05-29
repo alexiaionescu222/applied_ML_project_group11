@@ -1,5 +1,3 @@
-# uvicorn API:app --reload
-# http://127.0.0.1:8000/docs
 import io
 import librosa
 import torch
@@ -8,7 +6,7 @@ from pydantic import BaseModel
 from model_cnn import GenreCNN
 from typing import Optional, Tuple
 
-# Configuration
+# configuration
 PORT = 8000
 SR = 22050
 CLIP_DUR = 10
@@ -20,7 +18,7 @@ GENRES = [
 ]
 CNN_PATH = "cnn_best.pth"
 
-# Model setup
+# model setup
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 cnn = GenreCNN(
     n_mels=N_MELS, n_genres=len(GENRES), clip_duration=CLIP_DUR,
@@ -33,11 +31,11 @@ cnn.eval().to(device)
 app = FastAPI(
     title="Music Genre Classifier API",
     version="1.1",
-    description = (
+    description=(
         "Upload a short WAV audio clip only. "
-        "The app will analyze the audio, extract mel spectrogram features, and "
-        "classify it into one of 10 music genres: blues, classical, country, "
-        "disco, hiphop, jazz, metal, pop, reggae, or rock."
+        "The app will analyze the audio, extract mel spectrogram features, "
+        " and classify it into one of 10 music genres: blues, classical, "
+        "country, disco, hiphop, jazz, metal, pop, reggae, or rock."
     )
 )
 

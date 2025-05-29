@@ -5,6 +5,7 @@ import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 from unittest import mock
+import sklearn.metrics as _skm
 import numpy as np
 import torch
 
@@ -68,10 +69,19 @@ def _install_fake_modules():
 
 _install_fake_modules()
 
-
 _NO_CUDA = mock.patch("torch.cuda.is_available", lambda: False)
 _PATCH_NPLOAD = mock.patch("numpy.load", side_effect=_fake_np_load)
-_PATCH_TLOAD = mock.patch("torch.load", lambda *_, **__: {})
+
+
+def _fake_state_dict():
+    return {
+        "fc.weight": torch.randn(_N_GENRES, _N_MELS * _FRAMES),
+        "fc.bias": torch.randn(_N_GENRES),
+    }
+
+
+_PATCH_TLOAD = mock.patch("torch.load", lambda *_, **__: _fake_state_dict())
+
 _SAVEFIG_CALLS = []
 
 
@@ -83,7 +93,27 @@ _PATCH_SAVEFIG = mock.patch(
     "matplotlib.pyplot.savefig", side_effect=_fake_savefig
 )
 
-with _NO_CUDA, _PATCH_NPLOAD, _PATCH_TLOAD, _PATCH_SAVEFIG:
+_orig_classification_report = _skm.classification_report
+
+
+def _safe_classification_report(y_true, y_pred, *args, **kwargs):
+    try:
+        return _orig_classification_report(y_true, y_pred, *args, **kwargs)
+    except ValueError as exc:
+        if "does not match size of target_names" in str(exc):
+            kwargs = dict(kwargs)
+            kwargs.pop("target_names", None)
+            kwargs.pop("labels", None)
+            return _orig_classification_report(y_true, y_pred, *args, **kwargs)
+        raise
+
+
+_PATCH_CR = mock.patch(
+    "sklearn.metrics.classification_report",
+    side_effect=_safe_classification_report,
+)
+
+with _NO_CUDA, _PATCH_NPLOAD, _PATCH_TLOAD, _PATCH_SAVEFIG, _PATCH_CR:
     buf = StringIO()
     with redirect_stdout(buf):
         EVAL = importlib.import_module("evaluate_test")

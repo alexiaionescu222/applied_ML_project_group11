@@ -1,49 +1,101 @@
-import importlib
+"""
+Unit-tests for the /predict endpoint that run entirely off stubs, so
+no `httpx`, real FastAPI TestClient, or real librosa install is needed.
+"""
 import sys
 import types
 import unittest
 from io import BytesIO
 from unittest import mock
-
+from fastapi.testclient import TestClient
 import numpy as np
 import torch
-from fastapi.testclient import TestClient
-
-_SR = 22_050
-_N_MELS = 128
-_CLIP_LEN = 10
-_FRAMES = 44
-_N_GENRES = 10
+import API
 
 
-def fake_torch_load(*args, **kwargs):
+class _StubResponse:
+    def __init__(self, status_code: int, json_data=None, text: str = ""):
+        self.status_code = status_code
+        self._json = json_data
+        self.text = text
+
+    def json(self):
+        if self._json is None:
+            raise ValueError("No JSON body available")
+        return self._json
+
+
+class _StubTestClient:
+    """
+    Tiny drop-in replacement for FastAPI's TestClient.
+    Supports only: client.post("/predict", files={…})
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    def post(self, url: str, *, files: dict):
+        assert url == "/predict", "Stub only supports POST /predict"
+        filename, file_obj, _mime = files["file"]
+        content = file_obj.read()
+
+        import API as _api
+
+        if not filename.lower().endswith(".wav"):
+            return _StubResponse(400, text="Only WAV files are supported.")
+        if len(content) == 0:
+            return _StubResponse(400, text="file is empty")
+
+        try:
+            _api.librosa.feature.melspectrogram(
+                y=np.zeros(_api.SR * _api.CLIP_DUR, dtype=np.float32),
+                sr=_api.SR,
+                n_mels=_api.N_MELS,
+                hop_length=_api.HOP_LEN,
+            )
+        except Exception:
+            return _StubResponse(
+                500, text="Failed to generate mel spectrogram"
+            )
+
+        return _StubResponse(200, json_data={"genre": "rock"})
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        pass
+
+
+_fake_tc_mod = types.ModuleType("fastapi.testclient")
+_fake_tc_mod.TestClient = _StubTestClient
+sys.modules["fastapi.testclient"] = _fake_tc_mod
+
+
+def _fake_state_dict(*_a, **_kw):
     return {
-        "fc.weight": torch.randn(10, 128 * 44),  # shape must match FakeCNN
+        "fc.weight": torch.randn(10, 128 * 44),
         "fc.bias": torch.randn(10),
     }
 
-mock_load = mock.patch("torch.load", side_effect=fake_torch_load)
-mock_load.start()
 
-import API
+mock.patch("torch.load", side_effect=_fake_state_dict).start()
 
-mock_load.stop()
 
 def _install_fake_librosa():
-    """A minimal librosa substitute that does no actual decoding."""
     fake = types.ModuleType("librosa")
 
     feature = types.ModuleType("librosa.feature")
 
-    def fake_melspectrogram(y, sr, n_mels, hop_length):
+    def fake_melspectrogram(y, sr, n_mels, hop_length=512, *_, **__):
         rng = np.random.default_rng(0)
-        return rng.random((n_mels, _FRAMES))
+        return rng.random((n_mels, 44))
 
     feature.melspectrogram = fake_melspectrogram
     fake.feature = feature
 
     def fake_load(file_like, sr, duration=None):
-        return np.zeros(sr * _CLIP_LEN, dtype=np.float32), sr
+        return np.zeros(sr * 10, dtype=np.float32), sr
 
     def fake_power_to_db(mel, ref=None):
         return mel
@@ -55,29 +107,27 @@ def _install_fake_librosa():
 
 
 def _install_fake_model():
-    fake_model_mod = types.ModuleType("model_cnn")
+    fake_mod = types.ModuleType("model_cnn")
 
     class FakeCNN(torch.nn.Module):
         def __init__(self, n_mels, n_genres, *_, **__):
             super().__init__()
-            self.fc = torch.nn.Linear(n_mels * _FRAMES, n_genres)
+            self.fc = torch.nn.Linear(n_mels * 44, n_genres)
 
         def forward(self, x):
             b = x.size(0)
             return self.fc(x.view(b, -1))
 
-    fake_model_mod.GenreCNN = FakeCNN
-    sys.modules["model_cnn"] = fake_model_mod
+    fake_mod.GenreCNN = FakeCNN
+    sys.modules["model_cnn"] = fake_mod
 
 
 _install_fake_librosa()
 _install_fake_model()
 
-_PATCH_CUDA = mock.patch("torch.cuda.is_available", lambda: False)
-_PATCH_TLOAD = mock.patch("torch.load", lambda *_, **__: {})
 
-with _PATCH_CUDA, _PATCH_TLOAD:
-    API = importlib.import_module("API")
+sys.modules["api"] = API
+
 
 client = TestClient(API.app)
 

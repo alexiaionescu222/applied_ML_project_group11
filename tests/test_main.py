@@ -21,7 +21,7 @@ class MainScriptTest(unittest.TestCase):
 
         cls._stdout = io.StringIO()
         with redirect_stdout(cls._stdout):
-            cls._main = importlib.import_module("run_all2")
+            cls._main = importlib.import_module("run_all")
 
         cls._patch_system.stop()
         cls._printed = cls._stdout.getvalue()

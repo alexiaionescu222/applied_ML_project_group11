@@ -10,7 +10,7 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 
-# Reproducibility
+# reproducibility
 random.seed(42)
 np.random.seed(42)
 

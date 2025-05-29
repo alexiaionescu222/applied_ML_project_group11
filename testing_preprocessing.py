@@ -4,7 +4,7 @@ import random
 import numpy as np
 from preprocessing import preprocess_audio_dataset
 
-# Fix randomness for reproducibility
+# fix randomness for reproducibility
 random.seed(42)
 np.random.seed(42)
 
@@ -20,7 +20,7 @@ for genre in sorted(os.listdir(SPLIT_DIR)):
     wavs = sorted([f for f in os.listdir(genre_folder) if f.endswith(".wav")])
     if not wavs:
         continue
-    # Always pick the first file alphabetically
+    # always pick the first file alphabetically
     pick = wavs[0]
     audio_files.append(os.path.join(genre_folder, pick))
     labels.append(genre)
