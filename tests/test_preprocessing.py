@@ -34,7 +34,7 @@ class TestpreprocessingingHelpers(unittest.TestCase):
         mat = np.array([[1.0, 4.0], [2.0, 3.0]])
         scaled = preprocessing.scale_unit(mat)
         self.assertAlmostEqual(scaled.min(), 0.0)
-        self.assertAlmostEqual(scaled.max(), 1.0)
+        self.assertAlmostEqual(scaled.max(), 1.0, places=6)
 
     def test_extract_mel_spectrogram_shape(self):
         """Quick smoke-test (real librosa) on a 1 s sine wave."""
@@ -66,7 +66,7 @@ class TestpreprocessingingHelpers(unittest.TestCase):
         audio_paths = [f"dummy_{i}.wav" for i in range(5)]
         labels = ["rock"] * 5
 
-        X_pca, y, scaler, pca = preprocessing.preprocessing_audio_dataset(
+        X_pca, y, scaler, pca = preprocessing.preprocess_audio_dataset(
             audio_paths,
             labels,
             clip_duration=self.clip_duration,
@@ -90,7 +90,7 @@ class TestpreprocessingingHelpers(unittest.TestCase):
     ):
         """If *all* files fail, a RuntimeError is raised."""
         with self.assertRaises(RuntimeError):
-            preprocessing.preprocessing_audio_dataset(["broken.wav"], ["rock"])
+            preprocessing.preprocess_audio_dataset(["broken.wav"], ["rock"])
 
 
 if __name__ == "__main__":

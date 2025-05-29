@@ -16,6 +16,19 @@ _FRAMES = 44
 _N_GENRES = 10
 
 
+def fake_torch_load(*args, **kwargs):
+    return {
+        "fc.weight": torch.randn(10, 128 * 44),  # shape must match FakeCNN
+        "fc.bias": torch.randn(10),
+    }
+
+mock_load = mock.patch("torch.load", side_effect=fake_torch_load)
+mock_load.start()
+
+import API
+
+mock_load.stop()
+
 def _install_fake_librosa():
     """A minimal librosa substitute that does no actual decoding."""
     fake = types.ModuleType("librosa")

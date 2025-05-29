@@ -22,8 +22,6 @@ pip install -r requirements.txt
 
 --- 
 
-
-
 ## Running the API
 
 By default, the API will be hosted at:http://127.0.0.1:8000. In case of loading difficulties, try http://127.0.0.1:8000/docs.
@@ -43,15 +41,6 @@ streamlit run streamlit_app.py
 ```
 
 --- 
-
-## Running the API
-
-By default, the API will be hosted at:http://127.0.0.1:8000. In case of loading difficulties, try http://127.0.0.1:8000/docs.
-
-```bash
-uvicorn API:app --reload 
-```
----
 
 ## Running unittests
 
