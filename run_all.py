@@ -20,4 +20,8 @@ print("=== Running evaluate_test.py ===")
 os.system("python evaluate_test.py")
 print("Test set evaluation complete!\n")
 
+print("=== Running compare_models.py ===")
+os.system("python comparison_model.py")
+print("Model comparison complete!\n")
+
 print("All steps completed.")

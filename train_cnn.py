@@ -9,7 +9,8 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, ConcatDataset, Subset
 from dataset import GTZANSpectrogramDataset
 from model_cnn import GenreCNN
-
+import warnings
+warnings.filterwarnings("once")
 
 def analyse_fit(
     train_acc_hist, val_acc_hist,
@@ -79,36 +80,16 @@ GRID = {
     "batch_size": [16, 32]
 }
 
-# load cross-validation folds
-with open("audio_split/cv_folds.json") as f:
-    folds = json.load(f)
-fold_keys = sorted(folds.keys())
 
-# build train-only and val-only datasets
-train_only_ds = GTZANSpectrogramDataset(
-    "audio_split/train", GENRES, n_mels=N_MELS
-)
-val_only_ds = GTZANSpectrogramDataset(
-    "audio_split/val",   GENRES, n_mels=N_MELS
-)
-full_ds = ConcatDataset([train_only_ds, val_only_ds])
-
-# create list of all relative paths
-all_rel_paths = []
-# entries from train
-for genre in sorted(GENRES):
-    folder = os.path.join("audio_split", "train", genre)
-    files = sorted([f for f in os.listdir(folder) if f.endswith(".wav")])
-    for fname in files:
-        rel = os.path.normpath(os.path.join("train", genre, fname))
-        all_rel_paths.append(rel)
-# entries from val
-for genre in sorted(GENRES):
-    folder = os.path.join("audio_split", "val", genre)
-    files = sorted([f for f in os.listdir(folder) if f.endswith(".wav")])
-    for fname in files:
-        rel = os.path.normpath(os.path.join("val", genre, fname))
-        all_rel_paths.append(rel)
+SPLITS = {
+    "fold_1": "audio_split/fold_1",
+    "fold_2": "audio_split/fold_2",
+    "fold_3": "audio_split/fold_3",
+    "fold_4": "audio_split/fold_4",
+    "fold_5": "audio_split/fold_5",
+}
+# we'll do 5-fold CV on fold_1..fold_5
+fold_keys = sorted(k for k in SPLITS)
 
 # to record results
 best_val_acc_overall = 0.0
@@ -122,26 +103,20 @@ for lr, batch_size in product(GRID["lr"], GRID["batch_size"]):
     fold_verdicts = []
 
     for fold_key in fold_keys:
-        print(f"{fold_key} is starting now \n")
-        train_list = folds[fold_key]["train"]
-        val_list = folds[fold_key]["val"]
-        # convert relative paths back into normalized ones
-        train_indices = [
-            all_rel_paths.index(os.path.normpath(p)) for p in train_list
-        ]
-        val_indices = [
-            all_rel_paths.index(os.path.normpath(p)) for p in val_list
-        ]
-
-        train_subset = Subset(full_ds, train_indices)
-        val_subset = Subset(full_ds, val_indices)
-
-        train_loader = DataLoader(
-            train_subset, batch_size=batch_size, shuffle=True
+        print(f"{fold_key} is starting now\n")
+        # validation = this fold’s directory
+        val_subset = GTZANSpectrogramDataset(
+            SPLITS[fold_key], GENRES, n_mels=N_MELS
         )
-        val_loader = DataLoader(
-            val_subset, batch_size=batch_size, shuffle=False
-        )
+        # training = all the other folds
+        train_ds_list = [
+            GTZANSpectrogramDataset(SPLITS[k], GENRES, n_mels=N_MELS)
+            for k in fold_keys if k != fold_key
+        ]
+        train_subset = ConcatDataset(train_ds_list)
+
+        train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
+        val_loader   = DataLoader(val_subset,   batch_size=batch_size, shuffle=False)
 
         model = GenreCNN(
             n_mels=N_MELS,
@@ -238,6 +213,9 @@ for lr, batch_size in product(GRID["lr"], GRID["batch_size"]):
     ):
         best_val_acc_overall = avg_val_acc
         best_config = {"lr": lr, "batch_size": batch_size}
+
+# save fold-wise validation accuracies
+np.save("cnn_fold_accuracies.npy", np.array(fold_val_accs))
 
 # summary
 print("\n=== CV GRID SEARCH RESULTS ===")
