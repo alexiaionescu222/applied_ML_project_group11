@@ -45,3 +45,14 @@ class GenreCNN(nn.Module):
         x = self.features(x)
         x = self.classifier(x)
         return x
+    
+
+    def predict_mc_dropout(self, x: torch.Tensor, n_samples: int = 20):
+        #Perform n_samples stochastic forward passes with dropout active.
+        self.train()   #enable dropout layers
+        # Collect predictions
+        preds = torch.stack([self(x) for _ in range(n_samples)])  # [n_samples, batch, n_genres]
+        # Compute statistics
+        mean = preds.mean(dim=0)    # [batch, n_genres]
+        var  = preds.var(dim=0)     # [batch, n_genres]
+        return mean, var

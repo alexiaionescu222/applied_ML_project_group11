@@ -63,22 +63,37 @@ test_loader = DataLoader(test_ds, batch_size=BEST_BATCH_SIZE)
 
 model.eval()
 all_preds, all_labels = [], []
+all_vars = []
 test_loss = 0.0
 
-with torch.no_grad():
-    for X_batch, y_batch in test_loader:
-        X_batch, y_batch = X_batch.to(device), y_batch.to(device)
-        outputs = model(X_batch)
-        loss = criterion(outputs, y_batch)
-        test_loss += loss.item() * X_batch.size(0)
+T = 20  # number of MC samples
+all_preds, all_labels = [], []
+test_loss = 0.0
+for X_batch, y_batch in test_loader:
+    X_batch, y_batch = X_batch.to(device), y_batch.to(device)
+    # get mean and variance across T stochastic passes
+    mean_out, var_out = model.predict_mc_dropout(X_batch, n_samples=T)
+    loss = criterion(mean_out, y_batch)
+    test_loss += loss.item() * X_batch.size(0)
+    preds = mean_out.detach().argmax(dim=1)
+    all_preds.append(preds.detach().cpu().view(-1).numpy())
+    all_labels.append(y_batch.detach().cpu().view(-1).numpy())
+    all_vars.append(var_out.detach().cpu().numpy())
+all_preds  = np.concatenate(all_preds, axis=0)    
+all_labels = np.concatenate(all_labels, axis=0)    
+var_array  = np.concatenate(all_vars, axis=0)      
 
-        preds = outputs.argmax(dim=1)
-        all_preds.append(preds.cpu().numpy())
-        all_labels.append(y_batch.cpu().numpy())
+# Compute a single “uncertainty score” per sample, e.g. mean over genres
+uncertainties = var_array.mean(axis=1)             # [N_test]
+
+# Print them
+print("Predictive uncertainty for each test sample:")
+for idx, u in enumerate(uncertainties):
+    print(f" Sample {idx:3d}:  uncertainty = {u:.4f}")
 
 test_loss /= len(test_ds)
-y_true = np.concatenate(all_labels)
-y_pred = np.concatenate(all_preds)
+y_true = np.concatenate([lbl.flatten() for lbl in all_labels])
+y_pred = np.concatenate([prd.flatten() for prd in all_preds])
 acc = accuracy_score(y_true, y_pred)
 
 print(f"Loss: {test_loss:.3f} | Accuracy: {acc:.3f}")
