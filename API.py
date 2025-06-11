@@ -85,7 +85,7 @@ def get_prediction(input_tensor: torch.Tensor) -> Tuple[str, float]:
 )
 async def predict_genre(
     file: UploadFile = File(
-        ..., description="A WAV file up to 10 seconds in length"
+        ..., description="A WAV file at least 10 seconds in length"
     ),
     response: Response = None
 ):
