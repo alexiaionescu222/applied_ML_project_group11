@@ -73,12 +73,12 @@ class TestGridSearchScript(unittest.TestCase):
     def test_each_result_entry_has_expected_fields(self):
         for entry in TRAINING_SCRIPT.results:
             self.assertSetEqual(
-                set(entry.keys()), {"lr", "batch_size", "best_val_acc"}
+                set(entry.keys()), {"lr", "batch_size", "avg_val_acc","over_underfitting"}
             )
             self.assertIsInstance(entry["lr"], float)
             self.assertIsInstance(entry["batch_size"], int)
-            self.assertGreaterEqual(entry["best_val_acc"], 0.0)
-            self.assertLessEqual(entry["best_val_acc"], 1.0)
+            self.assertGreaterEqual(entry["avg_val_acc"], 0.0)
+            self.assertLessEqual(entry["avg_val_acc"], 1.0)
 
     def test_best_config_is_not_none_and_valid(self):
         best_cfg = TRAINING_SCRIPT.best_config
@@ -88,8 +88,8 @@ class TestGridSearchScript(unittest.TestCase):
                       TRAINING_SCRIPT.GRID["batch_size"])
 
     def test_best_val_acc_range(self):
-        self.assertGreaterEqual(TRAINING_SCRIPT.best_val_acc, 0.0)
-        self.assertLessEqual(TRAINING_SCRIPT.best_val_acc, 1.0)
+        self.assertGreaterEqual(TRAINING_SCRIPT.best_val_acc_overall, 0.0)
+        self.assertLessEqual(TRAINING_SCRIPT.best_val_acc_overall, 1.0)
 
 
 if __name__ == "__main__":

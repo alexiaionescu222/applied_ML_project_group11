@@ -33,6 +33,7 @@ class MainScriptTest(unittest.TestCase):
             "python train_baseline_knn.py",
             "python train_cnn.py",
             "python evaluate_test.py",
+            "python comparison_model.py"
         ]
         self.assertEqual(self._captured_cmds, expected)
 
@@ -44,6 +45,7 @@ class MainScriptTest(unittest.TestCase):
             "Running train_baseline_knn.py",
             "Running train_cnn.py",
             "Running evaluate_test.py",
+            "Running comparison_model.py"
         ]:
             with self.subTest(step=step):
                 self.assertIn(step, self._printed)

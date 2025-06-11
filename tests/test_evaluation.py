@@ -62,6 +62,11 @@ def _install_fake_modules():
         def forward(self, x):
             b = x.size(0)
             return self.fc(x.view(b, -1))
+        
+        def predict_mc_dropout(self, x, n_samples):
+             out = self.forward(x)
+             var = torch.zeros_like(out)
+             return out, var
 
     fake_model_mod.GenreCNN = FakeModel
     sys.modules["model_cnn"] = fake_model_mod

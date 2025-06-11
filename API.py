@@ -78,7 +78,7 @@ def get_prediction(input_tensor: torch.Tensor) -> Tuple[str, float]:
 
 
 @app.post(
-    "/predictions",
+    "/predict",
     response_model=PredictionResponse,
     summary="Classify a music clip",
     response_description="Predicted music genre and optional confidence score"
