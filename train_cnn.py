@@ -9,8 +9,6 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, ConcatDataset, Subset
 from dataset import GTZANSpectrogramDataset
 from model_cnn import GenreCNN
-import warnings
-warnings.filterwarnings("once")
 
 def analyse_fit(
     train_acc_hist, val_acc_hist,
@@ -204,15 +202,9 @@ for lr, batch_size in product(GRID["lr"], GRID["batch_size"]):
         "avg_val_acc": avg_val_acc,
         "over_underfitting": fold_verdicts
     })
-    if (
-        avg_val_acc > best_val_acc_overall
-        and all(
-            v == "No strong signs of over- or under-fitting."
-            for v in fold_verdicts
-        )
-    ):
-        best_val_acc_overall = avg_val_acc
-        best_config = {"lr": lr, "batch_size": batch_size}
+    if avg_val_acc > best_val_acc_overall:
+         best_val_acc_overall = avg_val_acc
+         best_config = {"lr": lr, "batch_size": batch_size}
 
 # save fold-wise validation accuracies
 np.save("cnn_fold_accuracies.npy", np.array(fold_val_accs))

@@ -57,7 +57,6 @@ model = GenreCNN(n_mels=N_MELS, n_genres=len(GENRES)).to(device)
 model.load_state_dict(torch.load(BEST_MODEL_FILE, map_location=device))
 criterion = nn.CrossEntropyLoss()
 
-# use your best batch size here
 test_ds = GTZANSpectrogramDataset("audio_split/test", GENRES, n_mels=N_MELS)
 test_loader = DataLoader(test_ds, batch_size=BEST_BATCH_SIZE)
 

@@ -4,8 +4,6 @@ import json
 from glob import glob
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import train_test_split
-import warnings
-warnings.filterwarnings("once")
 
 # GTZAN root
 DATASET_DIR = "music_genre_classification/data/genres_original"

@@ -4,8 +4,7 @@ import joblib
 import librosa
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import PCA
-import warnings
-warnings.filterwarnings("once")
+
 
 def split_audio_into_clips(y, sr, clip_duration=10):
     clip_samples = sr * clip_duration

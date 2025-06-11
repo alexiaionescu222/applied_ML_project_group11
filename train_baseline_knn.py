@@ -3,8 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-import warnings
-warnings.filterwarnings("once")
+
 
 # make sure plots dir exists
 PLOTS_DIR = "plots"
