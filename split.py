@@ -29,7 +29,6 @@ for genre in os.listdir(DATASET_DIR):
         print(f"Skipping {genre!r}: no .wav files")
         continue
 
-    # 1) carve off test
     train_val, test = train_test_split(
         wavs,
         test_size=SPLITS["test"],

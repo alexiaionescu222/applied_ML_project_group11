@@ -12,7 +12,7 @@ os.makedirs(PLOTS_DIR, exist_ok=True)
 GENRES = ["blues", "classical", "country", "disco", "hiphop",
           "jazz", "metal", "pop", "reggae", "rock"]
 
-# where your PCA'd features live
+
 FEATURE_DIR = "data/features"
 
 # folds to use in CV 

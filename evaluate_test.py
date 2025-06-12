@@ -52,7 +52,7 @@ plt.close()
 print("=== CNN Test Evaluation ===")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# instantiate model exactly as in training
+
 model = GenreCNN(n_mels=N_MELS, n_genres=len(GENRES)).to(device)
 model.load_state_dict(torch.load(BEST_MODEL_FILE, map_location=device))
 criterion = nn.CrossEntropyLoss()
@@ -82,18 +82,19 @@ all_preds  = np.concatenate(all_preds, axis=0)
 all_labels = np.concatenate(all_labels, axis=0)    
 var_array  = np.concatenate(all_vars, axis=0)      
 
-# Compute a single “uncertainty score” per sample, e.g. mean over genres
-uncertainties = var_array.mean(axis=1)             # [N_test]
-
-# Print them
-print("Predictive uncertainty for each test sample:")
-for idx, u in enumerate(uncertainties):
-    print(f" Sample {idx:3d}:  uncertainty = {u:.4f}")
+# Compute a single “uncertainty score” per sample
+uncertainties = var_array.mean(axis=1)            
 
 test_loss /= len(test_ds)
 y_true = np.concatenate([lbl.flatten() for lbl in all_labels])
 y_pred = np.concatenate([prd.flatten() for prd in all_preds])
 acc = accuracy_score(y_true, y_pred)
+
+print("Predictive uncertainty for each test sample:")
+for idx, u in enumerate(uncertainties):
+    true_lbl = GENRES[y_true[idx]]
+    pred_lbl = GENRES[y_pred[idx]]
+    print(f" Sample {idx:3d}:  true = {true_lbl:8s}  pred = {pred_lbl:8s}  uncertainty = {u:.4f}")
 
 print(f"Loss: {test_loss:.3f} | Accuracy: {acc:.3f}")
 print("Classification report:")
