@@ -78,13 +78,12 @@ for X_batch, y_batch in test_loader:
     all_preds.append(preds.detach().cpu().view(-1).numpy())
     all_labels.append(y_batch.detach().cpu().view(-1).numpy())
     all_vars.append(var_out.detach().cpu().numpy())
-all_preds  = np.concatenate(all_preds, axis=0)    
-all_labels = np.concatenate(all_labels, axis=0)    
-var_array  = np.concatenate(all_vars, axis=0)      
+all_preds = np.concatenate(all_preds, axis=0)
+all_labels = np.concatenate(all_labels, axis=0)
+var_array = np.concatenate(all_vars, axis=0)
 
-# Compute a single “uncertainty score” per sample
-uncertainties = var_array.mean(axis=1)            
-
+# compute a single “uncertainty score” per sample
+uncertainties = var_array.mean(axis=1)
 test_loss /= len(test_ds)
 y_true = np.concatenate([lbl.flatten() for lbl in all_labels])
 y_pred = np.concatenate([prd.flatten() for prd in all_preds])
@@ -94,7 +93,10 @@ print("Predictive uncertainty for each test sample:")
 for idx, u in enumerate(uncertainties):
     true_lbl = GENRES[y_true[idx]]
     pred_lbl = GENRES[y_pred[idx]]
-    print(f" Sample {idx:3d}:  true = {true_lbl:8s}  pred = {pred_lbl:8s}  uncertainty = {u:.4f}")
+    print(
+        f" Sample {idx:3d}:  true = {true_lbl:8s}  "
+        "pred = {pred_lbl:8s}  uncertainty = {u:.4f}"
+    )
 
 print(f"Loss: {test_loss:.3f} | Accuracy: {acc:.3f}")
 print("Classification report:")

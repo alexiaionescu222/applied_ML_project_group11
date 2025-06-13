@@ -1,15 +1,12 @@
-"""
-Unit-tests for the /predict endpoint that run entirely off stubs, so
-no `httpx`, real FastAPI TestClient, or real librosa install is needed.
-"""
 import sys
 import types
 import unittest
 from io import BytesIO
 from unittest import mock
+from fastapi.testclient import TestClient
 import numpy as np
 import torch
-
+import API
 
 
 class _StubResponse:
@@ -25,11 +22,6 @@ class _StubResponse:
 
 
 class _StubTestClient:
-    """
-    Tiny drop-in replacement for FastAPI's TestClient.
-    Supports only: client.post("/predict", files={…})
-    """
-
     def __init__(self, app):
         self.app = app
 
@@ -70,7 +62,6 @@ _fake_tc_mod = types.ModuleType("fastapi.testclient")
 _fake_tc_mod.TestClient = _StubTestClient
 sys.modules["fastapi.testclient"] = _fake_tc_mod
 
-from fastapi.testclient import TestClient
 
 def _fake_state_dict(*_a, **_kw):
     return {
@@ -125,8 +116,6 @@ def _install_fake_model():
 _install_fake_librosa()
 _install_fake_model()
 
-
-import API
 
 sys.modules["api"] = API
 

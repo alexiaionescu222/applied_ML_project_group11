@@ -14,7 +14,7 @@ from model_cnn import GenreCNN
 PIPELINE_STEPS: List[str] = [
     "split.py",
     "preprocessing.py",
-    "testing_preprocessing.py",
+    "test_preprocessing.py",
     "train_baseline_knn.py",
     "train_cnn.py",
     "evaluate_test.py",
@@ -79,7 +79,7 @@ if section == "Run Pipeline":
     st.title("🔄 Machine-Learning Pipeline")
 
     st.markdown(
-        "Click *Run All* to execute the full sequence, "
+        "Click **Run All** to execute the full sequence, "
         "or choose an individual step below:"
     )
 
@@ -103,7 +103,7 @@ else:
     st.title("🎵 Music-Genre Classifier")
 
     st.write(
-        "Upload a *≥10-second WAV* clip. "
+        "Upload a **≤10-second WAV** clip. "
         "The app shows its waveform, Mel-spectrogram, "
         "and the genre predicted by the trained CNN."
     )
@@ -176,4 +176,4 @@ else:
 
     st.markdown("---")
     st.subheader("Predicted Genre")
-    st.success(f"*{pred_genre.upper()}*")
+    st.success(f"**{pred_genre.upper()}**")

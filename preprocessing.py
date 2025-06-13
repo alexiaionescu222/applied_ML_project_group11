@@ -62,13 +62,13 @@ def preprocess_audio_dataset(audio_paths, labels,
 
 
 if __name__ == "__main__":
-    SPLITS = { 
-   "fold_1": "audio_split/fold_1", 
-   "fold_2": "audio_split/fold_2", 
-   "fold_3": "audio_split/fold_3", 
-   "fold_4": "audio_split/fold_4",
-   "fold_5": "audio_split/fold_5", 
-   "test": "audio_split/test" 
+    SPLITS = {
+        "fold_1": "audio_split/fold_1",
+        "fold_2": "audio_split/fold_2",
+        "fold_3": "audio_split/fold_3",
+        "fold_4": "audio_split/fold_4",
+        "fold_5": "audio_split/fold_5",
+        "test": "audio_split/test"
     }
 
     OUT_DIR = "data/features"

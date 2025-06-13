@@ -4,7 +4,7 @@ import random
 import numpy as np
 from preprocessing import preprocess_audio_dataset
 
-# fix randomness for reproducibility
+# reproducibility
 random.seed(42)
 np.random.seed(42)
 

@@ -17,7 +17,6 @@ _FAKE_Y_TEST = _rng.integers(0, 10, 16)
 
 
 class _FakeNpz(dict):
-    """Minimal substitute for np.lib.npyio.NpzFile."""
     def __init__(self, X, y):
         super().__init__(X=X, y=y)
 
@@ -62,11 +61,6 @@ def _install_fake_modules():
         def forward(self, x):
             b = x.size(0)
             return self.fc(x.view(b, -1))
-        
-        def predict_mc_dropout(self, x, n_samples):
-             out = self.forward(x)
-             var = torch.zeros_like(out)
-             return out, var
 
     fake_model_mod.GenreCNN = FakeModel
     sys.modules["model_cnn"] = fake_model_mod
@@ -126,8 +120,6 @@ with _NO_CUDA, _PATCH_NPLOAD, _PATCH_TLOAD, _PATCH_SAVEFIG, _PATCH_CR:
 
 
 class TestEvaluationScript(unittest.TestCase):
-    """High-level checks that the evaluation completed as expected."""
-
     def test_script_prints_two_section_headers(self):
         self.assertIn("=== k-NN Test Evaluation ===", _PRINTED_OUTPUT)
         self.assertIn("=== CNN Test Evaluation ===", _PRINTED_OUTPUT)

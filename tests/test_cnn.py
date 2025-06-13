@@ -14,11 +14,9 @@ _FRAMES = 44
 
 
 def _make_fake_modules():
-    """Insert stub modules so the training script uses them."""
     fake_ds_mod = types.ModuleType("dataset")
 
     class FakeDataset(torch.utils.data.Dataset):
-        """Returns random tensors shaped like (1, 128, 44) + integer label."""
         def __init__(self, root, genres, n_mels):
             self.X = torch.randn(32, 1, _N_MELS, _FRAMES)
             self.y = torch.randint(0, len(genres), (32,))
@@ -35,7 +33,6 @@ def _make_fake_modules():
     fake_model_mod = types.ModuleType("model_cnn")
 
     class FakeModel(torch.nn.Module):
-        """A tiny 1-layer classifier – keeps optimisation *very* fast."""
         def __init__(self, n_mels, n_genres, *_, **__):
             super().__init__()
             self.fc = torch.nn.Linear(n_mels * _FRAMES, n_genres)
@@ -57,8 +54,6 @@ TRAINING_SCRIPT = importlib.import_module("train_cnn")
 
 
 class TestGridSearchScript(unittest.TestCase):
-    """Checks that the script’s public outcomes make sense."""
-
     @classmethod
     def tearDownClass(cls):
         _DISABLE_CUDA_PATCH.stop()
@@ -73,12 +68,12 @@ class TestGridSearchScript(unittest.TestCase):
     def test_each_result_entry_has_expected_fields(self):
         for entry in TRAINING_SCRIPT.results:
             self.assertSetEqual(
-                set(entry.keys()), {"lr", "batch_size", "avg_val_acc","over_underfitting"}
+                set(entry.keys()), {"lr", "batch_size", "best_val_acc"}
             )
             self.assertIsInstance(entry["lr"], float)
             self.assertIsInstance(entry["batch_size"], int)
-            self.assertGreaterEqual(entry["avg_val_acc"], 0.0)
-            self.assertLessEqual(entry["avg_val_acc"], 1.0)
+            self.assertGreaterEqual(entry["best_val_acc"], 0.0)
+            self.assertLessEqual(entry["best_val_acc"], 1.0)
 
     def test_best_config_is_not_none_and_valid(self):
         best_cfg = TRAINING_SCRIPT.best_config
@@ -88,8 +83,8 @@ class TestGridSearchScript(unittest.TestCase):
                       TRAINING_SCRIPT.GRID["batch_size"])
 
     def test_best_val_acc_range(self):
-        self.assertGreaterEqual(TRAINING_SCRIPT.best_val_acc_overall, 0.0)
-        self.assertLessEqual(TRAINING_SCRIPT.best_val_acc_overall, 1.0)
+        self.assertGreaterEqual(TRAINING_SCRIPT.best_val_acc, 0.0)
+        self.assertLessEqual(TRAINING_SCRIPT.best_val_acc, 1.0)
 
 
 if __name__ == "__main__":

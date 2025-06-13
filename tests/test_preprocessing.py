@@ -11,7 +11,6 @@ class TestpreprocessingingHelpers(unittest.TestCase):
     n_mels = 128
 
     def test_split_audio_into_clips_exact_multiple(self):
-        """Perfect multiple of clip length ⇒ all clips kept, all same size."""
         y = np.zeros(self.sr * self.clip_duration * 3)
         clips = preprocessing.split_audio_into_clips(
             y, self.sr, self.clip_duration
@@ -22,7 +21,6 @@ class TestpreprocessingingHelpers(unittest.TestCase):
         )
 
     def test_split_audio_into_clips_drops_incomplete_tail(self):
-        """Last, shorter fragment must be discarded."""
         y = np.zeros(self.sr * self.clip_duration * 2 + self.sr * 3)
         clips = preprocessing.split_audio_into_clips(
             y, self.sr, self.clip_duration
@@ -30,14 +28,12 @@ class TestpreprocessingingHelpers(unittest.TestCase):
         self.assertEqual(len(clips), 2)
 
     def test_scale_unit_maps_to_0_1(self):
-        """Output is always in the closed interval [0, 1]."""
         mat = np.array([[1.0, 4.0], [2.0, 3.0]])
         scaled = preprocessing.scale_unit(mat)
         self.assertAlmostEqual(scaled.min(), 0.0)
         self.assertAlmostEqual(scaled.max(), 1.0, places=6)
 
     def test_extract_mel_spectrogram_shape(self):
-        """Quick smoke-test (real librosa) on a 1 s sine wave."""
         t = np.linspace(0, 1, self.sr, endpoint=False)
         y = 0.5 * np.sin(2 * np.pi * 440 * t)
         mel_db = preprocessing.extract_mel_spectrogram(
@@ -51,11 +47,9 @@ class TestpreprocessingingHelpers(unittest.TestCase):
     def test_preprocessing_audio_dataset_happy_path(
         self, mock_load, mock_mel
     ):
-        """Pipeline works and returns correct shapes/components."""
         rng = np.random.default_rng(42)
 
         def fake_load(path, sr):
-            # White-noise ten-second clip
             return rng.standard_normal(self.sr * self.clip_duration), sr
 
         fake_mel = rng.random((self.n_mels, 431))
@@ -78,7 +72,6 @@ class TestpreprocessingingHelpers(unittest.TestCase):
         self.assertEqual(X_pca.shape[0], len(labels))
         self.assertEqual(len(y), len(labels))
         self.assertEqual(pca.n_components_, 4)
-        # MinMaxScaler learned 0 ≤ data ≤ 1
         self.assertGreaterEqual(scaler.data_min_.min(), 0.0)
         self.assertLessEqual(scaler.data_max_.max(), 1.0)
 
@@ -88,7 +81,6 @@ class TestpreprocessingingHelpers(unittest.TestCase):
     def test_preprocessing_audio_dataset_raises_if_nothing_processed(
         self, mock_load
     ):
-        """If *all* files fail, a RuntimeError is raised."""
         with self.assertRaises(RuntimeError):
             preprocessing.preprocess_audio_dataset(["broken.wav"], ["rock"])
 

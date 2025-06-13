@@ -6,8 +6,6 @@ from unittest.mock import patch
 
 
 class MainScriptTest(unittest.TestCase):
-    """Run `main.py` once under heavy patching and then make assertions."""
-
     @classmethod
     def setUpClass(cls):
         cls._captured_cmds = []
@@ -33,19 +31,16 @@ class MainScriptTest(unittest.TestCase):
             "python train_baseline_knn.py",
             "python train_cnn.py",
             "python evaluate_test.py",
-            "python comparison_model.py"
         ]
         self.assertEqual(self._captured_cmds, expected)
 
     def test_every_step_header_is_printed(self):
-        """Each phase should announce itself to the user."""
         for step in [
             "Running split.py",
             "Running preprocessing.py",
             "Running train_baseline_knn.py",
             "Running train_cnn.py",
             "Running evaluate_test.py",
-            "Running comparison_model.py"
         ]:
             with self.subTest(step=step):
                 self.assertIn(step, self._printed)
@@ -54,10 +49,6 @@ class MainScriptTest(unittest.TestCase):
         self.assertIn("All steps completed.", self._printed)
 
     def test_script_exit_code_success(self):
-        """
-        Because `os.system` is faked to return 0 and main.py never raises,
-        the module import should complete cleanly (no uncaught exception).
-        """
         self.assertTrue(True)
 
 

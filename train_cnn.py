@@ -1,14 +1,14 @@
 import os
-import json
 from itertools import product
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, ConcatDataset, Subset
+from torch.utils.data import DataLoader, ConcatDataset
 from dataset import GTZANSpectrogramDataset
 from model_cnn import GenreCNN
+
 
 def analyse_fit(
     train_acc_hist, val_acc_hist,
@@ -86,10 +86,10 @@ SPLITS = {
     "fold_4": "audio_split/fold_4",
     "fold_5": "audio_split/fold_5",
 }
-# we'll do 5-fold CV on fold_1..fold_5
+# 5-fold CV
 fold_keys = sorted(k for k in SPLITS)
 
-# to record results
+# record results
 best_val_acc_overall = 0.0
 best_config = None
 results = []
@@ -102,19 +102,20 @@ for lr, batch_size in product(GRID["lr"], GRID["batch_size"]):
 
     for fold_key in fold_keys:
         print(f"{fold_key} is starting now\n")
-        # validation = this fold’s directory
         val_subset = GTZANSpectrogramDataset(
             SPLITS[fold_key], GENRES, n_mels=N_MELS
         )
-        # training = all the other folds
         train_ds_list = [
             GTZANSpectrogramDataset(SPLITS[k], GENRES, n_mels=N_MELS)
             for k in fold_keys if k != fold_key
         ]
         train_subset = ConcatDataset(train_ds_list)
-
-        train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
-        val_loader   = DataLoader(val_subset,   batch_size=batch_size, shuffle=False)
+        train_loader = DataLoader(
+            train_subset, batch_size=batch_size, shuffle=True
+        )
+        val_loader = DataLoader(
+            val_subset, batch_size=batch_size, shuffle=False
+        )
 
         model = GenreCNN(
             n_mels=N_MELS,
@@ -203,8 +204,8 @@ for lr, batch_size in product(GRID["lr"], GRID["batch_size"]):
         "over_underfitting": fold_verdicts
     })
     if avg_val_acc > best_val_acc_overall:
-         best_val_acc_overall = avg_val_acc
-         best_config = {"lr": lr, "batch_size": batch_size}
+        best_val_acc_overall = avg_val_acc
+        best_config = {"lr": lr, "batch_size": batch_size}
 
 # save fold-wise validation accuracies
 np.save("cnn_fold_accuracies.npy", np.array(fold_val_accs))

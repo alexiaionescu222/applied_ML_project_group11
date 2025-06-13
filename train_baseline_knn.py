@@ -2,7 +2,9 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import (
+    accuracy_score, classification_report, confusion_matrix
+)
 
 
 # make sure plots dir exists
@@ -15,7 +17,7 @@ GENRES = ["blues", "classical", "country", "disco", "hiphop",
 
 FEATURE_DIR = "data/features"
 
-# folds to use in CV 
+# folds to use in CV
 fold_names = [f"fold_{i}" for i in range(1, 6)]
 
 # load all folds into memory
@@ -31,7 +33,9 @@ for fold in fold_names:
     X_val, y_val = fold_data[fold]
     # training = all other folds
     X_train = np.vstack([fold_data[f][0] for f in fold_names if f != fold])
-    y_train = np.concatenate([fold_data[f][1] for f in fold_names if f != fold])
+    y_train = np.concatenate(
+        [fold_data[f][1] for f in fold_names if f != fold]
+    )
 
     # train k-NN
     knn = KNeighborsClassifier(n_neighbors=5)
@@ -53,7 +57,7 @@ for fold in fold_names:
 
     # confusion matrix plot
     cm = confusion_matrix(y_val, y_pred, labels=knn.classes_)
-    fig, ax = plt.subplots(figsize=(6,6))
+    fig, ax = plt.subplots(figsize=(6, 6))
     im = ax.imshow(cm, cmap="Blues")
     ax.set_xticks(range(len(GENRES)))
     ax.set_xticklabels(GENRES, rotation=45, ha="right")
